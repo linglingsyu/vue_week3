@@ -24,90 +24,57 @@
     class="py-3"
   >
     <div class="container">
-      <div class="row">
-        <div :class="[!detail.title ? 'col-12' : 'col-6']">
-          <div class="text-end mt-4">
-            <button
-              type="button"
-              class="btn btn-primary"
-              @click="openModal('add')"
-            >
-              建立新的產品
-            </button>
-          </div>
-          <table class="table text-center">
-            <thead>
-              <tr>
-                <th>產品名稱</th>
-                <th>原價</th>
-                <th>售價</th>
-                <th>是否啟用</th>
-                <th>查看細節</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr
-                v-for="product in products"
-                :key="product.id"
-              >
-                <td>{{ product.title}}</td>
-                <td>{{ product.origin_price}}</td>
-                <td>{{ product.price}}</td>
-                <td :class="[product.is_enabled? 'text-success' : 'text-danger']">
-                  {{ product.is_enabled ? '啟用' : '未啟用'}}
-                </td>
-                <td>
-                  <button
-                    type="button"
-                    class="btn btn-primary btn-sm"
-                    @click="detail = product"
-                  >
-                    查看細節
-                  </button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-          <p>目前有 {{ products.length }} 項產品</p>
-        </div>
-        <div class="col-6">
-          <template v-if="detail.title">
-            <h2>單一產品細節</h2>
-            <div class="card">
-              <div class="text-center py-3">
-                <img
-                  :src="detail.imageUrl"
-                  class="card-img-top w-50"
-                  :alt="detail.category"
-                />
-              </div>
-              <div class="card-body">
-                <h5 class="card-title">
-                  {{ detail.title }}
-                  <span class="badge bg-primary">{{detail.category
-                    }}</span>
-                </h5>
-
-                <p class="card-text">商品描述： {{ detail.description }}</p>
-                <p class="card-text">商品內容：尺寸：{{ detail.content }}</p>
-                <p class="card-text">
-                  <span>{{detail.price}}</span>
-                  <span
-                    class="text-muted text-decoration-line-through mx-1">{{detail.origin_price}}</span>{{detail.unit}} /
-                  元
-                </p>
-              </div>
-            </div>
-            <div class="my-3">
-              <img
-                class="image mx-3"
-                v-for="img in detail.imagesUrl"
-                :src="img"
-              />
-            </div>
-          </template>
-        </div>
+      <div class="text-end mt-4">
+        <button
+          type="button"
+          class="btn btn-primary"
+          @click="openModal('add')"
+        >
+          建立新的產品
+        </button>
       </div>
+      <table class="table text-center">
+        <thead>
+          <tr>
+            <th>分類</th>
+            <th>產品名稱</th>
+            <th>原價</th>
+            <th>售價</th>
+            <th>是否啟用</th>
+            <th>編輯</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr
+            v-for="product in products"
+            :key="product.id"
+          >
+            <td>{{ product.category }}</td>
+            <td>{{ product.title }}</td>
+            <td>{{ product.origin_price }}</td>
+            <td>{{ product.price }}</td>
+            <td :class="[product.is_enabled? 'text-success' : 'text-danger']">
+              {{ product.is_enabled ? '啟用' : '未啟用'}}
+            </td>
+            <td>
+              <button
+                type="button"
+                class="btn btn-primary btn-sm me-3"
+                @click="openModal('edit',product)"
+              >
+                編輯
+              </button>
+              <button
+                type="button"
+                class="btn btn-danger btn-sm"
+                @click="openModal('delete',product)"
+              >
+                刪除
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </div>
 
     <!-- Modal -->
@@ -384,6 +351,7 @@
             <button
               type="button"
               class="btn btn-danger"
+              @click="submitHandler"
             >
               確認刪除
             </button>
@@ -456,26 +424,69 @@
             console.dir(error)
           })
       },
-      openModal(action) {
+      openModal(action, data) {
+        console.log(data)
         this.action = action
         if (action === 'add') {
+          this.productData = {
+            title: "",
+            category: "",
+            origin_price: "",
+            price: "",
+            unit: "",
+            description: "",
+            content: "",
+            is_enabled: 1,
+            imageUrl: "",
+            imagesUrl: []
+          }
           this.modalTitle = '新增產品'
+          this.productModal.show()
         } else if (action === 'edit') {
           this.modalTitle = '編輯產品'
+          this.productData = { ...data }
+          if (!this.productData.imagesUrl) {
+            this.productData.imagesUrl = []
+          }
+          this.productModal.show()
+
+        } else if (action === 'delete') {
+          this.productData = { ...data }
+          this.delProductModal.show()
         }
-        this.productModal.show()
+
       },
       addImages() {
         this.productData.imagesUrl.push('')
       },
       submitHandler() {
-        let method = 'POST'
-        let url = `​/api​/${path}​/admin​/product`
+        let method = 'post'
+        let url = `/api/${path}/admin/product`
+        let params = { data: this.productData }
         if (this.action === 'edit') {
           method = "put"
-          url = url + this.id
+          url = url + '/' + this.productData.id
+          delete this.productData.id
+        } else if (this.action === 'delete') {
+          method = 'delete'
+          url = url + '/' + this.productData.id
+          params = {}
         }
-      }
+        API[method](url, params).then(res => {
+          if (this.action !== 'delete') {
+            this.productModal.hide()
+          } else {
+            this.delProductModal.hide()
+          }
+          this.getAllData()
+        }).catch((error) => {
+          let str = ""
+          for (const item of error.response.data.message) {
+            str += item + '\n'
+          }
+          alert(str)
+        })
+      },
 
       // addData() {
       //   for (const item of this.addList) {
