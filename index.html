@@ -132,7 +132,7 @@
                     </div>
                   </div>
                   <div
-                    v-if="!productData.imagesUrl.length > 0 || productData.imagesUrl[productData.imagesUrl.length -1].length > 0"
+                    v-if="!productData?.imagesUrl.length > 0 || productData?.imagesUrl[productData.imagesUrl.length -1].length > 0"
                   >
                     <button
                       type="button"
@@ -379,7 +379,7 @@
             })
         },
         openModal(action, data) {
-          console.log(data)
+          // console.log(data)
           this.action = action
           if (action === 'add') {
             this.productData = {
@@ -441,20 +441,6 @@
               alert(str)
             })
         },
-
-        // addData() {
-        //   for (const item of this.addList) {
-        //     API.post(`api/${path}/admin/product`, { data: item })
-        //       .then((res) => {
-        //         // const data = res.data.products
-        //         console.log(res)
-        //       })
-        //       .catch((error) => {
-        //         alert('error!!')
-        //         console.dir(error)
-        //       })
-        //   }
-        // },
       },
     }
     createApp(app).mount('#app')
